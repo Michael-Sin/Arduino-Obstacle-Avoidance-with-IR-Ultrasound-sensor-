@@ -1,0 +1,181 @@
+#include <Servo.h>
+
+//direction pin
+const int DIR1_PIN = A0
+const int DIR2_PIN = A1
+
+//DC Motor module setting
+const int IN1_PIN = 6
+const int IN2_PIN = 10
+const int IN3_PIN = 5
+const int IN4_PIN = 9
+
+//Servo Motor module(change to map guidance)
+Servo myservo;
+int ServoPin = 13;
+
+//IR Avoidance and Light seeking module
+const int LeftAvoidancePin = 12;
+const int RightAvoidancePin = A5;
+const int LeftLightPin = A3;
+const int RightLightPin = A4;
+int dl, dr, LL, LR;
+
+//RUS04 UltraSonic module
+const int SingPin = 3; 
+float distance;
+unsigned long Time_Echo_us = 0;
+
+void setup() {
+  Serial.begin(9600);
+
+  //Wifi based motion signal input setting
+  pinMode(DIR1_PIN, INPUT);
+  digitalWrite(IN1_PIN, LOW); 
+  pinMode(DIR2_PIN, INPUT);
+  digitalWrite(IN1_PIN, LOW); 
+  
+  //DC Motor module setting
+  //Set LOW for not sending PWM
+  pinMode(IN1_PIN, OUTPUT);
+  digitalWrite(IN1_PIN, LOW);
+  pinMode(IN2_PIN, OUTPUT);
+  digitalWrite(IN2_PIN, LOW);
+  pinMode(IN3_PIN, OUTPUT);
+  digitalWrite(IN3_PIN, LOW);
+  pinMode(IN4_PIN, OUTPUT);
+  digitalWrite(IN4_PIN, LOW);
+  
+  //Motor module (CURRENT OUTPUT MODE)
+  pinMode(ServoPin, OUTPUT);
+  myservo.attach(ServoPin);
+  
+  //IR module
+  pinMode(LeftAvoidancePin, INPUT);
+  pinMode(RightAvoidancePin, INPUT);
+  pinMode(LeftLightPin, INPUT);
+  pinMode(RightLightPin, INPUT);
+
+  delay(1000);
+}
+
+void loop() {
+
+  //RUS04 UltraSonic module
+  pinMode(SingPin, OUTPUT);
+  digitalWrite(SingPin, LOW);
+  delayMicroseconds(2);
+  digitalWrite(SingPin, HIGH);
+  delayMicroseconds(20);
+  digitalWrite(SingPin, LOW);
+  pinMode(SingPin, INPUT);
+  Time_Echo_us = pulseIn(SingPin, HIGH);
+    if ((Time_Echo_us < 60000) && (Time_Echo_us > 1)) {
+        distance = Time_Echo_us / 58.00;
+        Serial.print("UltraSonic Distance:");
+        Serial.print(distance);
+        Serial.print("cm");
+        Serial.println();  
+    }
+    
+  //IR Avoidance and Light seeking module
+  dl = digitalRead(LeftAvoidancePin);
+  dr = digitalRead(RightAvoidancePin);
+  LL = analogRead(LeftLightPin);
+  LR = analogRead(RightLightPin);
+  Serial.print("LeftAvoidance:");
+  Serial.print(dl);
+  Serial.print("   ");
+  Serial.print("RightAvoidance:");
+  Serial.println(dr);
+  Serial.print("LeftLight:");
+  Serial.print(LL);
+  Serial.print("   ");
+  Serial.print("RightLight:");
+  Serial.println(LR);
+
+  //Motion Control
+  if (distance <= 10){
+      //across the avoidance
+      //stop
+      analogWrite(IN1_PIN, HIGH);
+      analogWrite(IN2_PIN, HIGH);
+      analogWrite(IN3_PIN, HIGH);
+      analogWrite(IN4_PIN, HIGH);
+      delay(1000);
+      //move back
+      analogWrite(IN1_PIN, 100);
+      analogWrite(IN2_PIN, LOW);
+      analogWrite(IN3_PIN, LOW);
+      analogWrite(IN4_PIN, 100);
+      delay(3000);
+      //right
+      analogWrite(IN1_PIN, LOW);
+      analogWrite(IN2_PIN, 200);
+      analogWrite(IN3_PIN, LOW);
+      analogWrite(IN4_PIN, 200);
+      delay(2000);
+      //left
+      analogWrite(IN1_PIN, 200);
+      analogWrite(IN2_PIN, LOW);
+      analogWrite(IN3_PIN, 200);
+      analogWrite(IN4_PIN, LOW);
+      delay(1000);
+  }
+  if (dl == 1){
+    if (dr == 1){
+        //across the avoidance
+        //stop
+        analogWrite(IN1_PIN, HIGH);
+        analogWrite(IN2_PIN, HIGH);
+        analogWrite(IN3_PIN, HIGH);
+        analogWrite(IN4_PIN, HIGH);
+        delay(1000);
+        //move back
+        analogWrite(IN1_PIN, 100);
+        analogWrite(IN2_PIN, LOW);
+        analogWrite(IN3_PIN, LOW);
+        analogWrite(IN4_PIN, 100);
+        delay(3000);
+        //right
+        analogWrite(IN1_PIN, LOW);
+        analogWrite(IN2_PIN, 200);
+        analogWrite(IN3_PIN, LOW);
+        analogWrite(IN4_PIN, 200);
+        delay(2000);
+        //left
+        analogWrite(IN1_PIN, 200);
+        analogWrite(IN2_PIN, LOW);
+        analogWrite(IN3_PIN, 200);
+        analogWrite(IN4_PIN, LOW);
+        delay(1000);
+    }
+    else {
+        //Move right (dl=1,dr=0)
+        //right
+        analogWrite(IN1_PIN, LOW);
+        analogWrite(IN2_PIN, 200);
+        analogWrite(IN3_PIN, LOW);
+        analogWrite(IN4_PIN, 200);
+        delay(1000);
+    }
+  }
+  else if (dr == 1){
+      //Move left (dl=0,dr=1)
+      //left
+      analogWrite(IN1_PIN, 200);
+      analogWrite(IN2_PIN, LOW);
+      analogWrite(IN3_PIN, 200);
+      analogWrite(IN4_PIN, LOW);
+      delay(1000);
+  }
+  else {
+      //Move forward (dl=0,dr=0)
+      //move forward
+      analogWrite(IN1_PIN, LOW);
+      analogWrite(IN2_PIN, 100);
+      analogWrite(IN3_PIN, 100);
+      analogWrite(IN4_PIN, LOW);
+  }
+  delay(500);
+}
